@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+
+# Dataset (imagens - demasiado grandes)
+data/spinal_ai2024/images/
+data/boostnet_labeldata/
+
+# Modelos treinados (enviar separadamente)
+results/scoliosis_hrnet/best.pth
+results/scoliosis_hrnet/last.pth
+
+# Pasta estranha
+{data,models,utils,configs,results}/
+
+# IDE
+.vscode/
+.idea/
