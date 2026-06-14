@@ -74,7 +74,6 @@ def parse_args():
     p.add_argument("--epochs",      type=int,   default=100)
     p.add_argument("--batch",       type=int,   default=8)
     p.add_argument("--lr",          type=float, default=1e-3)
-    p.add_argument("--max_samples", type=int,   default=600)
     p.add_argument("--image",       type=str,   default=None)
     p.add_argument("--ckpt",        type=str,   default=None)
     p.add_argument("--exp_name",    type=str,   default="scoliosis_hrnet")
@@ -88,10 +87,10 @@ def main():
     cfg  = {**DEFAULT_CONFIG,
             "arch": args.arch, "epochs": args.epochs,
             "batch_size": args.batch, "lr": args.lr,
-            "exp_name": args.exp_name, "max_samples": args.max_samples}
+            "exp_name": args.exp_name}
 
     if args.mode == "train":
-        print(f"\n== Modo: TREINO | {args.max_samples} imagens | {args.epochs} epochs ==")
+        print(f"\n== Modo: TREINO | {args.epochs} epochs ==")
         train_loader, val_loader, test_loader = build_dataloaders(
             args.data_root, cfg["batch_size"], cfg["num_workers"])
         model   = build_model(arch=cfg["arch"], num_outputs=cfg["num_outputs"])

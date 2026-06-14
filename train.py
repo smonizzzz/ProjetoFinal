@@ -19,7 +19,6 @@ DEFAULT_CONFIG = {
     "image_size":   512,
     "batch_size":   8,
     "num_workers":  4,
-    "max_samples":  600,
     "epochs":       100,
     "lr":           1e-3,
     "weight_decay": 1e-4,
@@ -31,9 +30,6 @@ DEFAULT_CONFIG = {
     "exp_name":     "scoliosis_hrnet",
 }
 
-
-def cmae(pred, target):
-    return float(torch.abs(pred - target).mean().item())
 
 
 def train_one_epoch(model, loader, criterion, optimizer, device):

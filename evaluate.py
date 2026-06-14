@@ -22,12 +22,11 @@ from pathlib import Path
 import torch
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
-    roc_auc_score, roc_curve, confusion_matrix, classification_report
+    roc_auc_score, roc_curve, classification_report
 )
-from sklearn.preprocessing import label_binarize
 
 sys.path.insert(0, str(Path(__file__).parent))
-from data.dataset import build_dataloaders, IMAGE_SIZE
+from data.dataset import build_dataloaders
 from models.hrnet import build_model
 
 CKPT     = "results/scoliosis_hrnet/best.pth"
@@ -43,9 +42,6 @@ def angle_to_class(angle):
     return 3
 
 
-def max_angle(angles):
-    return float(np.max(angles))
-
 
 @torch.no_grad()
 def run_evaluation():
@@ -59,7 +55,7 @@ def run_evaluation():
     print(f"Modelo carregado: {CKPT}")
 
     # Carregar dados
-    _, _, test_loader = build_dataloaders(DATA_ROOT, batch_size=8, num_workers=0, max_samples=1200)
+    _, _, test_loader = build_dataloaders(DATA_ROOT, batch_size=8, num_workers=0)
 
     all_pred_angles  = []
     all_target_angles = []
@@ -98,18 +94,6 @@ def run_evaluation():
     print(f"  Recall:    {rec*100:.1f}%")
     print(f"  F1-Score:  {f1*100:.1f}%")
     print(f"\n{classification_report(y_true, y_pred, target_names=CLASSES, zero_division=0)}")
-
-    # ROC-AUC (One-vs-Rest)
-    classes_present = np.unique(y_true)
-    y_true_bin = label_binarize(y_true, classes=[0, 1, 2, 3])
-
-    # Score continuo: angulo predito normalizado por classe
-    scores = np.zeros((len(pred_max), 4))
-    for i, angle in enumerate(pred_max):
-        scores[i, 0] = max(0, 10 - angle) / 10
-        scores[i, 1] = max(0, 25 - abs(angle - 17.5)) / 17.5
-        scores[i, 2] = max(0, 40 - abs(angle - 32.5)) / 32.5
-        scores[i, 3] = max(0, angle - 40) / 40
 
     # Guardar metricas
     metrics = {

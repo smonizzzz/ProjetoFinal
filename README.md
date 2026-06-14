@@ -10,10 +10,11 @@ Orientador: António Cunha | Coorientador: António Gouveia
 
 Pipeline completo de Deep Learning para análise automática de radiografias de escoliose:
 
-- **Deteção automática de keypoints** vertebrais (68 pontos: 17 vértebras × 4 pontos)
-- **Cálculo automático do ângulo de Cobb** (torácico e lombar)
+- **Regressão direta dos ângulos de Cobb** (torácico proximal, torácico principal e lombar)
+- **Classificação clínica automática** (Normal / Leve / Moderada / Grave)
 - **Modelo principal:** HRNet-W32 (High-Resolution Network)
-- **Dataset:** AASCE Challenge (609 radiografias anotadas)
+- **Dataset:** Spinal AI 2024 (20 000 radiografias anotadas)
+- **API REST** para integração com aplicações web
 
 ---
 
@@ -22,18 +23,17 @@ Pipeline completo de Deep Learning para análise automática de radiografias de 
 ```
 scoliosis_pipeline/
 ├── data/
-│   └── dataset.py          ← Dataset PyTorch + augmentação + geração de heatmaps
+│   └── dataset.py          ← Dataset PyTorch + augmentação de dados
 ├── models/
-│   ├── hrnet.py            ← Arquiteturas HRNet-W32 e U-Net
-│   └── losses.py           ← MSE heatmap + Wing Loss combinados
-├── utils/
-│   ├── metrics.py          ← SMAPE, PCK, CMAE, MRE + cálculo de Cobb
-│   └── visualization.py    ← Visualização de KP, Cobb, curvas de treino
+│   └── hrnet.py            ← Arquitetura HRNet-W32
 ├── configs/
-│   └── hrnet_w32.json      ← Configuração padrão (editável)
-├── results/                ← Checkpoints e resultados (gerado automaticamente)
+│   └── hrnet_w32.json      ← Configuração do modelo
+├── results/
+│   └── scoliosis_hrnet/    ← Checkpoints e métricas
 ├── main.py                 ← Entry point (treino / teste / inferência)
 ├── train.py                ← Loop de treino com early stopping
+├── evaluate.py             ← Avaliação completa com gráficos
+├── server.py               ← API REST (FastAPI)
 └── requirements.txt
 ```
 
@@ -44,7 +44,7 @@ scoliosis_pipeline/
 ```bash
 # 1. Criar ambiente virtual
 python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
+venv\Scripts\activate   # Windows
 
 # 2. Instalar dependências
 pip install -r requirements.txt
@@ -55,17 +55,22 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 
 ---
 
-## Dataset AASCE
+## Dataset — Spinal AI 2024
 
-1. Registar em [MICCAI 2019 AASCE Challenge](http://spineweb.digitalimaginggroup.ca/)
-2. Descarregar o dataset **boostnet_labeldata**
-3. Colocar em:
+1. Descarregar o dataset em [Spinal AI 2024](https://spinalmetrics.com/)
+2. Colocar em:
 
 ```
 data/
-└── boostnet_labeldata/
-    ├── data/       ← 001.jpg ... 609.jpg
-    └── labels/     ← 001.npy ... 609.npy  (shape: 68×2)
+└── spinal_ai2024/
+    ├── images/
+    │   ├── Spinal-AI2024-subset1/   ← treino
+    │   ├── Spinal-AI2024-subset2/   ← treino
+    │   ├── Spinal-AI2024-subset3/   ← treino
+    │   ├── Spinal-AI2024-subset4/   ← treino
+    │   └── Spinal-AI2024-subset5/   ← teste
+    ├── Cobb_train_gt.csv/
+    └── Cobb_test_gt.csv/
 ```
 
 ---
@@ -77,18 +82,15 @@ data/
 ```bash
 python main.py --mode train \
                --data_root ./data \
-               --arch hrnet \
                --epochs 100 \
                --batch 8 \
-               --lr 0.001 \
-               --exp_name scoliosis_hrnet
+               --lr 0.001
 ```
 
 Durante o treino são guardados automaticamente:
 - `results/scoliosis_hrnet/best.pth`     ← melhor modelo (menor CMAE)
 - `results/scoliosis_hrnet/last.pth`     ← último epoch (para retomar)
 - `results/scoliosis_hrnet/history.json` ← histórico de métricas
-- `results/scoliosis_hrnet/training_curves.png`
 
 ### Retomar treino interrompido
 
@@ -111,70 +113,65 @@ python main.py --mode test \
 ```bash
 python main.py --mode infer \
                --image caminho/para/radiografia.jpg \
-               --ckpt results/scoliosis_hrnet/best.pth \
-               --show
+               --ckpt results/scoliosis_hrnet/best.pth
+```
+
+### Servidor API REST
+
+```bash
+uvicorn server:app --host 0.0.0.0 --port 8000
+```
+
+Endpoint disponível:
+
+```
+POST /analyze
+{
+  "estudoId": "uuid-do-estudo",
+  "imageUrl": "https://...signed-url..."
+}
 ```
 
 ---
 
-## Métricas
+## Resultados
 
-| Métrica | Descrição | Referência AASCE SOTA |
-|---|---|---|
-| **CMAE** | Cobb angle MAE (°) — métrica principal | ~5–7° |
-| **MRE** | Mean Radial Error dos keypoints (px) | ~3–6 px |
-| **SMAPE** | Symmetric MAPE dos keypoints (%) | <5% |
-| **PCK@0.05** | % KP corretos (threshold=5% diagonal) | >90% |
-
-### Interpretação clínica do ângulo de Cobb
-
-| Ângulo | Severidade |
+| Métrica | Valor |
 |---|---|
-| < 10° | Normal |
-| 10°–25° | Leve — observação periódica |
-| 25°–40° | Moderada — colete ortopédico |
-| > 40° | Grave — avaliação cirúrgica |
+| **CMAE médio** | **2.83°** |
+| CMAE Torácico proximal (T1) | 2.62° |
+| CMAE Torácico principal (T2) | 2.68° |
+| CMAE Lombar | 3.18° |
+
+| Referência | CMAE |
+|---|---|
+| AASCE Challenge SOTA | ~5–7° |
+| **Este modelo** | **2.83°** |
 
 ---
 
-## Arquiteturas disponíveis
+## Interpretação clínica do ângulo de Cobb
 
-### HRNet-W32 (recomendado)
-- Mantém representações de alta resolução em paralelo
+| Ângulo | Severidade | Indicação |
+|---|---|---|
+| < 10° | Normal | — |
+| 10°–25° | Leve | Observação periódica |
+| 25°–40° | Moderada | Colete ortopédico |
+| > 40° | Grave | Avaliação cirúrgica |
+
+---
+
+## Arquitetura — HRNet-W32
+
+- Mantém representações de alta resolução em paralelo durante todo o processamento
 - 4 branches: [32, 64, 128, 256] canais
 - ~29M parâmetros
-- Melhor precisão para keypoints vertebrais
-
-### U-Net (prototipagem rápida)
-- Encoder-decoder com skip connections
-- ~31M parâmetros (com base_ch=64)
-- Mais rápida de treinar, ligeiramente inferior em precisão
-
----
-
-## Colab / GPU
-
-Para treinar no Google Colab com GPU gratuita:
-
-```python
-# Clonar / montar o projeto
-import sys
-sys.path.insert(0, '/content/scoliosis_pipeline')
-
-# Verificar GPU
-import torch
-print(torch.cuda.is_available())          # True se GPU disponível
-print(torch.cuda.get_device_name(0))      # Ex: Tesla T4
-
-# Treinar
-!python main.py --mode train --data_root /content/data --epochs 50 --batch 4
-```
+- Cabeça de regressão: AdaptiveAvgPool → Linear(480, 256) → Linear(256, 3)
 
 ---
 
 ## Referências
 
 1. Wang, J., et al. "Deep High-Resolution Representation Learning for Visual Recognition." TPAMI, 2020.
-2. Feng, Z-H., et al. "Wing Loss for Robust Facial Landmark Localisation with Convolutional Neural Networks." CVPR, 2018.
-3. Wu, H., et al. "Automatic Landmark Estimation for Adolescent Idiopathic Scoliosis Assessment Using BoostNet." Medical Image Analysis, 2017.
-4. MICCAI 2019 AASCE Challenge: Accurate Automated Spinal Curvature Estimation.
+2. MICCAI 2019 AASCE Challenge: Accurate Automated Spinal Curvature Estimation.
+3. Spinal AI 2024 Challenge Dataset.

@@ -8,7 +8,6 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 IMAGE_SIZE  = 512
-NUM_ANGLES  = 3
 TRAIN_SUBSETS = ["Spinal-AI2024-subset1", "Spinal-AI2024-subset2",
                  "Spinal-AI2024-subset3", "Spinal-AI2024-subset4"]
 TEST_SUBSET   = "Spinal-AI2024-subset5"
@@ -102,7 +101,7 @@ class SpinalDataset(Dataset):
         }
 
 
-def build_dataloaders(root, batch_size=8, num_workers=4, max_samples=None):
+def build_dataloaders(root, batch_size=8, num_workers=4):
     train_ds = SpinalDataset(root, "train")
     val_ds   = SpinalDataset(root, "val")
     test_ds  = SpinalDataset(root, "test")
