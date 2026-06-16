@@ -6,6 +6,17 @@ Orientador: António Cunha | Coorientador: António Gouveia
 
 ---
 
+> **Para testar o projeto** — os modelos treinados e o dataset estão alojados no Hugging Face:
+>
+> | Recurso | Link |
+> |---|---|
+> | Modelo (`best.pth` / `last.pth`) | [smonizzzz/scoliosis-hrnet](https://huggingface.co/smonizzzz/scoliosis-hrnet) |
+> | Dataset (20 000 radiografias) | [smonizzzz/spinal-ai2024](https://huggingface.co/datasets/smonizzzz/spinal-ai2024) |
+>
+> Ver secção **[Início rápido para avaliação](#início-rápido-para-avaliação)** abaixo.
+
+---
+
 ## Descrição
 
 Pipeline completo de Deep Learning para análise automática de radiografias de escoliose:
@@ -36,6 +47,38 @@ scoliosis_pipeline/
 ├── server.py               ← API REST (FastAPI)
 └── requirements.txt
 ```
+
+---
+
+## Início rápido para avaliação
+
+Para testar o projeto sem precisar de treinar o modelo:
+
+```bash
+# 1. Clonar o repositório
+git clone https://github.com/smonizzzz/ProjetoFinal.git
+cd ProjetoFinal
+
+# 2. Instalar dependências
+pip install -r requirements.txt
+
+# 3. Descarregar o modelo treinado do Hugging Face
+python -c "
+from huggingface_hub import hf_hub_download
+import os, shutil
+os.makedirs('results/scoliosis_hrnet', exist_ok=True)
+path = hf_hub_download(repo_id='smonizzzz/scoliosis-hrnet', filename='best.pth')
+shutil.copy(path, 'results/scoliosis_hrnet/best.pth')
+print('Modelo descarregado!')
+"
+
+# 4. Inferência numa radiografia
+python main.py --mode infer \
+               --image caminho/para/radiografia.jpg \
+               --ckpt results/scoliosis_hrnet/best.pth
+```
+
+> Para correr a avaliação completa no dataset de teste, descarregar também o dataset de [smonizzzz/spinal-ai2024](https://huggingface.co/datasets/smonizzzz/spinal-ai2024) e colocar em `data/spinal_ai2024/`.
 
 ---
 

@@ -7,12 +7,10 @@ __pycache__/
 venv/
 env/
 
-# Dataset (imagens - demasiado grandes)
+# Dataset (imagens - publicar no Hugging Face)
 data/spinal_ai2024/images/
 data/boostnet_labeldata/
 
-# Modelo de checkpoint intermédio (demasiado grande)
-results/scoliosis_hrnet/last.pth
 
 # Pasta estranha
 {data,models,utils,configs,results}/
