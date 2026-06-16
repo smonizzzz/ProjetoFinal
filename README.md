@@ -1,3 +1,21 @@
+---
+language:
+  - pt
+  - en
+license: mit
+tags:
+  - scoliosis
+  - cobb-angle
+  - hrnet
+  - medical-imaging
+  - regression
+  - pytorch
+task_categories:
+  - image-to-text
+metrics:
+  - mae
+---
+
 # Pipeline Deep Learning — Análise de Exames de Escoliose
 
 Projeto de Laboratório em Engenharia Informática — UTAD  
