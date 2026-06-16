@@ -11,8 +11,7 @@ env/
 data/spinal_ai2024/images/
 data/boostnet_labeldata/
 
-# Modelos treinados (enviar separadamente)
-results/scoliosis_hrnet/best.pth
+# Modelo de checkpoint intermédio (demasiado grande)
 results/scoliosis_hrnet/last.pth
 
 # Pasta estranha
